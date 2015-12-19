@@ -104,6 +104,7 @@ public class ResourceRequestBot extends Thread {
                     responseCode = response.getCode();
                     payload = response.getPayload();
                     contentFormat = response.getOptions().getContentFormat();
+                    //System.out.println("--- <"+info.getPath()+">["+method+"]-("+responseCode.name()+")["+contentFormat+"]\n"+Parsers.byte2string(payload)+"\n---");
                 } else {
                     log.log(Level.FINE, "Resource <"+info.getPath()+"> no response for method "+method);
                 }

@@ -123,4 +123,8 @@ public class Parsers {
             uri = "coap://"+address.getHostAddress()+":"+port+resource;
         return uri;
     }
+    
+    static public String byte2string(byte[] bytes) {
+        return new String(bytes);
+    }
 }

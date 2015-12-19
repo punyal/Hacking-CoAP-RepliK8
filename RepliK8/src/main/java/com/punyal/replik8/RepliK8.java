@@ -23,13 +23,15 @@
  */
 package com.punyal.replik8;
 
+import com.punyal.replik8.resource.CoapPhantomResource;
 import com.punyal.replik8.resource.ResourceInfo;
-import java.net.Inet6Address;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
+import org.eclipse.californium.core.CoapServer;
 
 /**
  *
@@ -39,14 +41,17 @@ public class RepliK8 implements Runnable {
     private static final Logger log = Logger.getLogger(RepliK8.class.getName()); 
     private final Configuration configuration;
     private boolean running = true;
+    private final CoapServer coapServer;
     
     public RepliK8(Configuration configuration) {
         this.configuration = configuration;
+        coapServer = new CoapServer(configuration.getLocalPort());
     }
     
     @Override
     public void run() {
         State state = State.CHECK_CONFIGURATION;
+        List<ResourceInfo> resourcesList = new ArrayList<>();
         try {
             while (running) {
                 try {
@@ -65,14 +70,11 @@ public class RepliK8 implements Runnable {
                         break;
                     case GET_RESOURCES_LIST:
                         CoapClient coapClient = new CoapClient(Parsers.generateURI(configuration.getRemoteAddress(), configuration.getRemotePort(), "/.well-known/core"));
+                        coapClient.setTimeout(4000); // 4s
                         CoapResponse response = coapClient.get();
                         if (response != null) {
-                            List<ResourceInfo> resourcesList = Parsers.parseWellKnownCore(response.getResponseText());
+                            resourcesList = Parsers.parseWellKnownCore(response.getResponseText());
                             
-                            System.out.println("Total number of resources: "+resourcesList.size());
-                            for(ResourceInfo resource: resourcesList) {
-                                System.out.print("<"+resource.getPath()+">");
-                            }
                             System.out.print("\n");
                             
                         } else {
@@ -80,6 +82,19 @@ public class RepliK8 implements Runnable {
                             running = false;
                         }
                         state = State.REQUEST_EACH_RESOURCE;
+                        break;
+                    case REQUEST_EACH_RESOURCE:
+                        System.out.println("Total number of resources: "+resourcesList.size());
+                        
+                        for (ResourceInfo info : resourcesList) {
+                            coapServer.add(new CoapPhantomResource(configuration, info));
+                        }
+                        
+                        coapServer.start();
+                        log.log(Level.INFO, "Starting Server...");
+                        state = State.FINISH;
+                        break;
+                    case FINISH:
                         break;
                     default:
                         running = false;
@@ -96,7 +111,9 @@ public class RepliK8 implements Runnable {
     public enum State {
         CHECK_CONFIGURATION,
         GET_RESOURCES_LIST,
-        REQUEST_EACH_RESOURCE
+        REQUEST_EACH_RESOURCE,
+        INITIALIZE_SERVER,
+        FINISH
         
     }
     

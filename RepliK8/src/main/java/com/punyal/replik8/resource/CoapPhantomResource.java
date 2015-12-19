@@ -23,10 +23,11 @@
  */
 package com.punyal.replik8.resource;
 
+import com.punyal.replik8.Configuration;
+import com.punyal.replik8.Constants;
+import com.punyal.replik8.Parsers;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
-import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 
 /**
@@ -34,9 +35,15 @@ import org.eclipse.californium.core.server.resources.CoapExchange;
  * @author Pablo Puñal Pereira <pablo.punal@ltu.se> <pablo@punyal.com>
  */
 public class CoapPhantomResource extends CoapResource {
-
-    public CoapPhantomResource(ResourceInfo info) {
+    private ResourceInfo info;
+    private final ResourceRequestBot botGET;
+    //private final ResourceRequestBot botPUT;
+    //private final ResourceRequestBot botPOST;
+    //private final ResourceRequestBot botDELETE;
+    
+    public CoapPhantomResource(Configuration configuration, ResourceInfo info) {
         super(info.getPath());
+        System.out.println("creating resource <"+info.getPath()+">");
         getAttributes().setTitle(info.getTitle());
         
         if (info.isObservable()) {
@@ -45,17 +52,18 @@ public class CoapPhantomResource extends CoapResource {
             setObserveType(CoAP.Type.NON); // TODO: Autodetect Type
             // TODO: Observe the resource and triger subscriptions
         }
+        
+        botGET = new ResourceRequestBot(configuration, info, Constants.CoapMethod.GET);
+        botGET.startBot();
     }
     
     @Override
     public void handleGET(CoapExchange exchange) {
-        ResponseCode responseCode = ResponseCode.UNSUPPORTED_CONTENT_FORMAT;
-        byte[] payload = null;
-        int contentFormat = MediaTypeRegistry.UNDEFINED;
-        
-        exchange.respond(responseCode, payload, contentFormat);
+        System.out.println(botGET.getResponseCode().name() +" - "+ botGET.getContentFormat() +" - "+ Parsers.byte2string(botGET.getPayload()));
+        exchange.respond(botGET.getResponseCode(), botGET.getPayload(), botGET.getContentFormat());
     }
     
+    /* TODO:Implement this after GET
     @Override
     public void handlePUT(CoapExchange exchange) {
         
@@ -70,5 +78,5 @@ public class CoapPhantomResource extends CoapResource {
     public void handleDELETE(CoapExchange exchange) {
         
     }
-    
+    */
 }
