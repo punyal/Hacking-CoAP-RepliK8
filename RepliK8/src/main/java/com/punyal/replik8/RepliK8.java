@@ -23,6 +23,7 @@
  */
 package com.punyal.replik8;
 
+import com.punyal.replik8.resource.ResourceInfo;
 import java.net.Inet6Address;
 import java.util.List;
 import java.util.logging.Level;
@@ -63,24 +64,19 @@ public class RepliK8 implements Runnable {
                         state = State.GET_RESOURCES_LIST;
                         break;
                     case GET_RESOURCES_LIST:
-                        String uri;
-                        if (configuration.getRemoteAddress() instanceof Inet6Address)
-                            uri = "coap://["+configuration.getRemoteAddress().getHostAddress()+"]:"+configuration.getRemotePort()+"/.well-known/core";
-                        else
-                            uri = "coap://"+configuration.getRemoteAddress().getHostAddress()+":"+configuration.getRemotePort()+"/.well-known/core";
-                        CoapClient coapClient = new CoapClient(uri);
+                        CoapClient coapClient = new CoapClient(Parsers.generateURI(configuration.getRemoteAddress(), configuration.getRemotePort(), "/.well-known/core"));
                         CoapResponse response = coapClient.get();
                         if (response != null) {
-                            List<Resource> resourcesList = Parsers.parseWellKnownCore(response.getResponseText());
+                            List<ResourceInfo> resourcesList = Parsers.parseWellKnownCore(response.getResponseText());
                             
                             System.out.println("Total number of resources: "+resourcesList.size());
-                            for(Resource resource: resourcesList) {
+                            for(ResourceInfo resource: resourcesList) {
                                 System.out.print("<"+resource.getPath()+">");
                             }
                             System.out.print("\n");
                             
                         } else {
-                            log.log(Level.WARNING, "No connection to {0}", uri);
+                            log.log(Level.WARNING, "No connection to {0}", coapClient.getURI());
                             running = false;
                         }
                         state = State.REQUEST_EACH_RESOURCE;

@@ -31,4 +31,18 @@ public class Constants {
     
     // Defaults
     public static final int DEFAULT_COAP_PORT = 5683;
+    public static final RequestBehaviour DEFAULT_REQUEST_BEHAVIOUR = RequestBehaviour.STATIC;
+    public static final int DEFAULT_REQUEST_TIMEOUT = 1000; // 1s
+    
+    public static enum CoapMethod {
+        GET,
+        PUT,
+        POST,
+        DELETE
+    }
+    
+    public static enum RequestBehaviour {
+        STATIC,
+        TIMEOUT
+    }
 }

@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.punyal.replik8;
+package com.punyal.replik8.resource;
 
 /**
  *
  * @author Pablo Puñal Pereira <pablo.punal@ltu.se> <pablo@punyal.com>
  */
-public class Resource {
+public class ResourceInfo {
     private final String title;
     private final String path;
     private final String att_ct;
@@ -36,7 +36,7 @@ public class Resource {
     private final String att_if;
     private final boolean obs;
     
-    public Resource(String path, String title, String att_ct, String att_rt, String att_sz, String att_if, boolean obs) {
+    public ResourceInfo(String path, String title, String att_ct, String att_rt, String att_sz, String att_if, boolean obs) {
         this.title = title;
         this.path = path;
         this.att_ct = att_ct;

@@ -23,6 +23,9 @@
  */
 package com.punyal.replik8;
 
+import com.punyal.replik8.resource.ResourceInfo;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -61,16 +64,16 @@ public class Parsers {
         return port;
     }
     
-    static public List<Resource> parseWellKnownCore(String response) {
+    static public List<ResourceInfo> parseWellKnownCore(String response) {
         List<String> textList = Arrays.asList(response.split(","));
-        List<Resource> resourcesList = new ArrayList<>();
+        List<ResourceInfo> resourcesList = new ArrayList<>();
         for (String info : textList) {
             resourcesList.add(parseResourceInfo(info));
         }
         return resourcesList;
     }
     
-    static public Resource parseResourceInfo(String response) {
+    static public ResourceInfo parseResourceInfo(String response) {
         List<String> infoList = Arrays.asList(response.split(";"));
         String title = null;
         String path = null;
@@ -109,6 +112,15 @@ public class Parsers {
                 }
             }
         }
-        return new Resource(path, title, att_ct, att_rt, att_sz, att_if, obs);
+        return new ResourceInfo(path, title, att_ct, att_rt, att_sz, att_if, obs);
+    }
+    
+    static public String generateURI(InetAddress address, int port, String resource) {
+        String uri;
+        if (address instanceof Inet6Address)
+            uri = "coap://["+address.getHostAddress()+"]:"+port+resource;
+        else
+            uri = "coap://"+address.getHostAddress()+":"+port+resource;
+        return uri;
     }
 }
