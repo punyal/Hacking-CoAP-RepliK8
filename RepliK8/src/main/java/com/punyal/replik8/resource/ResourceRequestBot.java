@@ -31,7 +31,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.californium.core.CoapClient;
 import org.eclipse.californium.core.CoapResponse;
-import org.eclipse.californium.core.coap.CoAP.ResponseCode;
 
 /**
  *
@@ -41,17 +40,19 @@ public class ResourceRequestBot extends Thread {
     private static final Logger log = Logger.getLogger(ResourceRequestBot.class.getName());
     private final Configuration configuration;
     private final ResourceInfo info;
-    private final CoapMethod method;
     private boolean running = false;
     
-    private ResponseCode responseCode;
-    private byte[] payload;
-    private int contentFormat;
+    private final SimpleEventNotifier notifier;
     
-    public ResourceRequestBot(Configuration configuration, ResourceInfo info, CoapMethod method) {
+    private CoapResponse responseGET = null;
+    private CoapResponse responsePUT = null;
+    private CoapResponse responsePOST = null;
+    private CoapResponse responseDELETE = null;
+    
+    public ResourceRequestBot(Configuration configuration, ResourceInfo info, SimpleEventNotifier notifier) {
         this.configuration = configuration;
         this.info = info;
-        this.method = method;
+        this.notifier = notifier;
         this.setDaemon(true);
     }
     
@@ -64,50 +65,45 @@ public class ResourceRequestBot extends Thread {
         running = false;
     }
     
-    public ResponseCode getResponseCode() {
-        return responseCode;
+    public CoapResponse getResponseGET() {
+        return responseGET;
     }
     
-    public byte[] getPayload() {
-        return payload;
+    public CoapResponse getResponsePUT() {
+        return responsePUT;
     }
     
-    public int getContentFormat() {
-        return contentFormat;
+    public CoapResponse getResponsePOST() {
+        return responsePOST;
+    }
+    
+    public CoapResponse getResponseDELETE() {
+        return responseDELETE;
     }
     
     @Override
     public void run() {
         CoapClient coapClient;
-        CoapResponse response = null;
         String uri;
         try {
             while (running) {
                 coapClient = new CoapClient(Parsers.generateURI(configuration.getRemoteAddress(), configuration.getRemotePort(), info.getPath()));
+                // TODO: Check if the previous response has an error code
                 
-                switch (method) {
-                    case GET:
-                        response = coapClient.get();
-                        break;
-                    case PUT: // TODO: implement
-                        break;
-                    case POST: // TODO: implement
-                        break;
-                    case DELETE: // TODO: implement
-                        break;
-                    default:
-                        running = false;
-                        break;
-                }
-                
-                if (response != null) {
-                    responseCode = response.getCode();
-                    payload = response.getPayload();
-                    contentFormat = response.getOptions().getContentFormat();
-                    //System.out.println("--- <"+info.getPath()+">["+method+"]-("+responseCode.name()+")["+contentFormat+"]\n"+Parsers.byte2string(payload)+"\n---");
+                responseGET = coapClient.get();
+                if (responseGET == null) {
+                    log.log(Level.FINE, "Resource <{0}> no response for method GET", info.getPath());
                 } else {
-                    log.log(Level.FINE, "Resource <"+info.getPath()+"> no response for method "+method);
+                    // TODO: Remove this fake observer to a real one. This is just a 1s timeout observe
+                    if (notifier != null) {
+                        notifier.setChanged();
+                        notifier.notifyObservers();
+                    }
                 }
+                /*
+                TODO: Implement POST, PUT and DELETE methods
+                */
+                
                 
                 try {
                     Thread.sleep(Constants.DEFAULT_REQUEST_TIMEOUT);
@@ -116,7 +112,7 @@ public class ResourceRequestBot extends Thread {
                 }
             }
         } finally {
-            log.log(Level.WARNING, "Bot for resource <"+ info.getPath() +"> DEAD");
+            log.log(Level.WARNING, "Bot for resource <{0}> DEAD", info.getPath());
         }
     }
 }

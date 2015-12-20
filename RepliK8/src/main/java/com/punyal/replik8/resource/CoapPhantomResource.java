@@ -24,9 +24,10 @@
 package com.punyal.replik8.resource;
 
 import com.punyal.replik8.Configuration;
-import com.punyal.replik8.Constants;
-import com.punyal.replik8.Parsers;
+import java.util.Observable;
+import java.util.Observer;
 import org.eclipse.californium.core.CoapResource;
+import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 
@@ -36,31 +37,43 @@ import org.eclipse.californium.core.server.resources.CoapExchange;
  */
 public class CoapPhantomResource extends CoapResource {
     private ResourceInfo info;
-    private final ResourceRequestBot botGET;
-    //private final ResourceRequestBot botPUT;
-    //private final ResourceRequestBot botPOST;
-    //private final ResourceRequestBot botDELETE;
+    private final ResourceRequestBot bot;
+    
+    private Observable obClass;
     
     public CoapPhantomResource(Configuration configuration, ResourceInfo info) {
-        super(info.getPath());
+        super(info.getPath().substring(1));
         System.out.println("creating resource <"+info.getPath()+">");
         getAttributes().setTitle(info.getTitle());
+        SimpleEventNotifier notifier = null;
         
         if (info.isObservable()) {
             setObservable(true);
             getAttributes().setObservable();
             setObserveType(CoAP.Type.NON); // TODO: Autodetect Type
-            // TODO: Observe the resource and triger subscriptions
+            notifier = new SimpleEventNotifier();
+            notifier.addObserver(new Observer() {
+                @Override
+                public void update(Observable o, Object arg) {
+                    changed();
+                }
+            });
         }
         
-        botGET = new ResourceRequestBot(configuration, info, Constants.CoapMethod.GET);
-        botGET.startBot();
+        bot = new ResourceRequestBot(configuration, info, notifier);
+        bot.startBot();
+        
+        // TODO: Create event base notification for observe
+        /*
+            changed();
+        */
     }
     
     @Override
     public void handleGET(CoapExchange exchange) {
-        System.out.println(botGET.getResponseCode().name() +" - "+ botGET.getContentFormat() +" - "+ Parsers.byte2string(botGET.getPayload()));
-        exchange.respond(botGET.getResponseCode(), botGET.getPayload(), botGET.getContentFormat());
+        CoapResponse response = bot.getResponseGET();
+        System.out.println(response.getCode().name() +" - "+ response.getOptions().getContentFormat() +" - "+ response.getResponseText());
+        exchange.respond(response.getCode(), response.getPayload(), response.getOptions().getContentFormat());
     }
     
     /* TODO:Implement this after GET
