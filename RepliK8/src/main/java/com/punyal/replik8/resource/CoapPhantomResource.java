@@ -24,11 +24,13 @@
 package com.punyal.replik8.resource;
 
 import com.punyal.replik8.Configuration;
+import java.awt.PageAttributes;
 import java.util.Observable;
 import java.util.Observer;
 import org.eclipse.californium.core.CoapResource;
 import org.eclipse.californium.core.CoapResponse;
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.server.resources.CoapExchange;
 
 /**
@@ -71,9 +73,13 @@ public class CoapPhantomResource extends CoapResource {
     
     @Override
     public void handleGET(CoapExchange exchange) {
-        CoapResponse response = bot.getResponseGET();
-        System.out.println(response.getCode().name() +" - "+ response.getOptions().getContentFormat() +" - "+ response.getResponseText());
-        exchange.respond(response.getCode(), response.getPayload(), response.getOptions().getContentFormat());
+        if (bot.getResponseGET() == null ) {
+            exchange.respond(CoAP.ResponseCode.NOT_FOUND, "Some problem to get a valid response", MediaTypeRegistry.TEXT_PLAIN);
+        } else {
+            CoapResponse response = bot.getResponseGET();
+            //System.out.println(response.getCode().name() +" - "+ response.getOptions().getContentFormat() +" - "+ response.getResponseText());
+            exchange.respond(response.getCode(), response.getPayload(), response.getOptions().getContentFormat());
+        }
     }
     
     /* TODO:Implement this after GET

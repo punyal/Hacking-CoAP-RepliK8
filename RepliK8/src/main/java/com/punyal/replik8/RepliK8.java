@@ -87,7 +87,8 @@ public class RepliK8 implements Runnable {
                         System.out.println("Total number of resources: "+resourcesList.size());
                         
                         for (ResourceInfo info : resourcesList) {
-                            coapServer.add(new CoapPhantomResource(configuration, info));
+                            if (!info.getPath().equals("/.well-known/core")) // Ignore well-known/core service
+                                coapServer.add(new CoapPhantomResource(configuration, info));
                         }
                         
                         coapServer.start();

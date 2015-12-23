@@ -25,7 +25,6 @@ package com.punyal.replik8.resource;
 
 import com.punyal.replik8.Configuration;
 import com.punyal.replik8.Constants;
-import com.punyal.replik8.Constants.CoapMethod;
 import com.punyal.replik8.Parsers;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -84,22 +83,44 @@ public class ResourceRequestBot extends Thread {
     @Override
     public void run() {
         CoapClient coapClient;
+        CoapObserver observer = null;
         String uri;
         try {
-            while (running) {
-                coapClient = new CoapClient(Parsers.generateURI(configuration.getRemoteAddress(), configuration.getRemotePort(), info.getPath()));
-                // TODO: Check if the previous response has an error code
-                
-                responseGET = coapClient.get();
-                if (responseGET == null) {
-                    log.log(Level.FINE, "Resource <{0}> no response for method GET", info.getPath());
-                } else {
-                    // TODO: Remove this fake observer to a real one. This is just a 1s timeout observe
-                    if (notifier != null) {
-                        notifier.setChanged();
-                        notifier.notifyObservers();
+            // Observable GET
+            if (info.isObservable()) {
+                observer = new CoapObserver(configuration, info) {
+                    
+                    @Override
+                    public void incomingData(CoapResponse response) {
+                        //System.out.println("New data: "+ response.getResponseText());
+                        responseGET = response;
+                        if (notifier != null) {
+                            notifier.setChanged();
+                            notifier.notifyObservers();
+                        }
                     }
+                    
+                    @Override
+                    public void error() {
+                        log.log(Level.WARNING, "Error observing resource: "+ info.getPath());
+                    }
+                };
+                observer.startObserve();
+                
+            }
+            while (running) {
+                if (!info.isObservable()) { // Non-Observable GET
+                    coapClient = new CoapClient(Parsers.generateURI(configuration.getRemoteAddress(), configuration.getRemotePort(), info.getPath()));
+                    // TODO: Check if the previous response has an error code
+                    //System.out.println("GET: "+coapClient.getURI());
+                
+                    responseGET = coapClient.get();
+                    if (responseGET == null) {
+                    log.log(Level.FINE, "Resource <{0}> no response for method GET", info.getPath());
+                    } 
                 }
+                
+                
                 /*
                 TODO: Implement POST, PUT and DELETE methods
                 */
@@ -112,6 +133,7 @@ public class ResourceRequestBot extends Thread {
                 }
             }
         } finally {
+            if (observer != null) observer.stopObserver();
             log.log(Level.WARNING, "Bot for resource <{0}> DEAD", info.getPath());
         }
     }
